@@ -2,14 +2,15 @@ import EventSource from 'eventsource';
 import { v4 as uuid } from 'uuid';
 import { Mutex } from 'async-mutex';
 import { Unsubscribe, UnsubscribeParams, ListenerCallback } from './types';
-import HTTP from './HTTP';
+import HTTP from './HTTP/http';
 import { ConnectionToken, SubscribeConfig } from './types';
 import { SERVICE_BASE_URL } from './constants';
 import { AuthorizationError } from './HTTP/errors/AuthorizationError';
 import { Result } from './shared/Result';
+import { http } from './HTTP';
 
-export default class ServerSentEvents {
-  public static instance: ServerSentEvents;
+export default class ErmisClient {
+  public static instance: ErmisClient;
 
   private http: HTTP;
 
@@ -27,18 +28,18 @@ export default class ServerSentEvents {
 
   private baseUrl: string;
 
-  private constructor(http: HTTP, config: SubscribeConfig) {
-    this.http = http;
+  private constructor(config: SubscribeConfig) {
     this.config = config;
+    this.http = http;
     this.mutex = new Mutex();
     this.baseUrl = config.server ?? SERVICE_BASE_URL;
   }
 
-  public static getInstance(http: HTTP, config: SubscribeConfig) {
-    if (!ServerSentEvents.instance) {
-      ServerSentEvents.instance = new ServerSentEvents(http, config);
+  public static getInstance(config: SubscribeConfig) {
+    if (!ErmisClient.instance) {
+      ErmisClient.instance = new ErmisClient(config);
     }
-    return ServerSentEvents.instance;
+    return ErmisClient.instance;
   }
 
   /**

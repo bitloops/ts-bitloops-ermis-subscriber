@@ -1,4 +1,5 @@
 export type SubscribeConfig = {
+  applicationId: string;
   publicKey: string;
   server?: string;
 };
