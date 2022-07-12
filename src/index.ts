@@ -157,7 +157,7 @@ export default class ServerSentEvents {
     };
   }
 
-  private async authorizeConnection(): Promise<ConnectionToken | AuthorizationError> {
+  private async authorizeConnection(): Promise<Result<ConnectionToken>> {
     const headers = this.getAuthHeaders();
     const authUrl = `${this.baseUrl}/bitloops/events/authorize`;
     const response = await this.http.handler({
@@ -169,13 +169,13 @@ export default class ServerSentEvents {
     const { data, error } = response;
     if (error || !data) {
       if (error instanceof AuthorizationError) {
-        return error;
+        return Result.fail(error.message);
       }
-      throw new Error('Unexpected error' + error);
+      return Result.fail('Unexpected error' + error);
     }
 
-    const connectionToken = data.data as ConnectionToken;
-    return connectionToken;
+    const { token } = data.data as any;
+    return Result.ok(token);
   }
 
   /**
@@ -194,6 +194,7 @@ export default class ServerSentEvents {
     // console.debug(' this.eventMap.length', this.eventMap.size);
     try {
       console.debug('Setting again eventsource');
+      // Retrieve new token?
       await this.setupEventSource();
       const subscribePromises = Array.from(this.eventMap.entries()).map(([namedEvent, callback]) =>
         this.subscribe(namedEvent, callback),
@@ -206,11 +207,17 @@ export default class ServerSentEvents {
   }
 
   private async setupEventSource() {
+    this.subscriptionId = uuid();
+    const authResult = await this.authorizeConnection();
+    if (authResult.isFailure) {
+      throw authResult.getErrorValue();
+    }
+
     return new Promise<void>((resolve, reject) => {
-      this.subscriptionId = uuid();
       const url = `${this.baseUrl}/bitloops/events/${this.subscriptionId}`;
 
-      const headers = this.getAuthHeaders();
+      const headers: Record<string, string> = this.getAuthHeaders();
+      headers.token = authResult.getValue();
       const eventSourceInitDict = { headers };
 
       this.subscribeConnection = new EventSource(url, eventSourceInitDict);
@@ -220,7 +227,6 @@ export default class ServerSentEvents {
         return resolve();
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       this.subscribeConnection.onerror = (error: any) => {
         // on error, ermis will clear our connectionId so we need to create a new one
         console.debug('subscribeConnection.onerror, closing and re-trying', error);

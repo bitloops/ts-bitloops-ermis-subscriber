@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
+    "test": "jest --config jestconfig.json --coverage",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
@@ -17,8 +18,7 @@
   "repository": "git@github.com:bitloops/ts-bitloops-ermis-publisher.git",
   "keywords": [
     "ermis",
-    "publisher",
-    "nodejs"
+    "subscriber"
   ],
   "author": "Bitloops",
   "license": "MIT",
@@ -34,9 +34,12 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@types/jest": "^28.1.4",
     "async-mutex": "^0.3.2",
     "axios": "^0.27.2",
     "eventsource": "^2.0.2",
+    "jest": "^28.1.2",
+    "ts-jest": "^28.0.5",
     "uuid": "^8.3.2"
   }
 }
