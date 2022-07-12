@@ -36,7 +36,7 @@ const bitloopsConfig = {
 
 const bitloops = app.initialize(bitloopsConfig);
 
-bitloops.subscribe.('my-topic', 'my-event', (data: any) => { console.log('received my-event data', data)});
+bitloops.subscribe('my-topic', 'my-event', (data: any) => { console.log('received my-event data', data)});
 
 ## Questions?
 
