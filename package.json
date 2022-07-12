@@ -1,7 +1,7 @@
 {
-  "name": "ts-bitloops-ermis-publisher",
+  "name": "bitloops-ermis-subscriber",
   "version": "1.0.0",
-  "description": "NodeJS publisher library for Ermis",
+  "description": "NodeJS subscriber library for Ermis",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -23,6 +23,8 @@
   "author": "Bitloops",
   "license": "MIT",
   "devDependencies": {
+    "@types/eventsource": "^1.1.9",
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
     "eslint": "^8.19.0",
@@ -30,5 +32,11 @@
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.7.1",
     "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "async-mutex": "^0.3.2",
+    "axios": "^0.27.2",
+    "eventsource": "^2.0.2",
+    "uuid": "^8.3.2"
   }
 }
