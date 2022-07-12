@@ -1,11 +1,12 @@
 import EventSource from 'eventsource';
 import { v4 as uuid } from 'uuid';
-import { Unsubscribe, UnsubscribeParams, ListenerCallback } from './definitions';
-import HTTP from './HTTP';
-import NetworkRestError from './HTTP/errors/NetworkRestError';
 import { Mutex } from 'async-mutex';
-import { SubscribeConfig } from './types';
+import { Unsubscribe, UnsubscribeParams, ListenerCallback } from './types';
+import HTTP from './HTTP';
+import { ConnectionToken, SubscribeConfig } from './types';
 import { SERVICE_BASE_URL } from './constants';
+import { AuthorizationError } from './HTTP/errors/AuthorizationError';
+import { Result } from './shared/Result';
 
 export default class ServerSentEvents {
   public static instance: ServerSentEvents;
@@ -48,12 +49,12 @@ export default class ServerSentEvents {
     namedEvent: string,
     callback: (data: DataType) => void,
   ): Promise<Unsubscribe> {
-    // console.log('subscribing topic:', namedEvent);
+    // console.debug('subscribing topic:', namedEvent);
     this.eventMap.set(namedEvent, callback);
-    const listenerCallback = this.modifyListenerCallback(namedEvent, callback);
+    const listenerCallback = this.prepareListenerCallback(namedEvent, callback);
 
     const release = await this.mutex.acquire();
-    console.log('I acquired the mutex', namedEvent);
+    console.debug('I acquired the mutex', namedEvent);
     /** If you are the initiator, establish sse connection */
     if (!this.connectionEstablished()) {
       try {
@@ -62,36 +63,30 @@ export default class ServerSentEvents {
         return this.unsubscribe({ namedEvent, listenerCallback });
       } finally {
         release();
-        console.log('I released the mutex', namedEvent);
+        // console.debug('I released the mutex', namedEvent);
       }
     } else {
       release();
-      console.log('I released the mutex', namedEvent);
+      //   console.debug('I released the mutex', namedEvent);
     }
 
-    try {
-      await this.registerTopicORConnection(this.subscriptionId, namedEvent);
-    } catch (error) {
-      if (error instanceof NetworkRestError)
-        console.error(`Got error response from REST: ${error}`);
-      // TODO improve this
-      return async () => {
-        // pass
-      };
+    const result = await this.registerTopicORConnection(this.subscriptionId, namedEvent);
+    if (result.isFailure) {
+      throw result.getErrorValue();
     }
 
-    console.log(`add event listener for namedEvent: ${namedEvent}`);
+    console.debug(`add event listener for namedEvent: ${namedEvent}`);
     this.subscribeConnection?.addEventListener(namedEvent, listenerCallback);
 
     return this.unsubscribe({ namedEvent, listenerCallback });
   }
 
-  private modifyListenerCallback<DataType>(
+  private prepareListenerCallback<DataType>(
     namedEvent: string,
     callback: (data: DataType) => void,
   ): ListenerCallback {
     return (event: MessageEvent<any>) => {
-      console.log(`received event for namedEvent: ${namedEvent}`);
+      console.debug(`received event for namedEvent: ${namedEvent}`);
       callback(JSON.parse(event.data));
     };
   }
@@ -107,17 +102,27 @@ export default class ServerSentEvents {
    * @param namedEvent
    * @returns
    */
-  private async registerTopicORConnection(subscriptionId: string, namedEvent: string) {
+  private async registerTopicORConnection(
+    subscriptionId: string,
+    namedEvent: string,
+  ): Promise<Result<void>> {
     const subscribeUrl = `${this.baseUrl}/bitloops/events/subscribe/${subscriptionId}`;
 
     const headers = this.getAuthHeaders();
-    // console.log('Sending headers', headers);
-    return this.http.handler({
-      url: subscribeUrl,
-      method: 'POST',
-      headers,
-      data: { topic: namedEvent },
-    });
+    // console.debug('Sending headers', headers);
+    try {
+      await this.http.handler({
+        url: subscribeUrl,
+        method: 'POST',
+        headers,
+        data: { topic: namedEvent },
+      });
+      return Result.ok();
+    } catch (error: any) {
+      //   if (error instanceof NetworkRestError)
+      //     console.error(`Got error response from REST: ${error}`);
+      return Result.fail(error.message);
+    }
   }
 
   /**
@@ -132,7 +137,7 @@ export default class ServerSentEvents {
   private unsubscribe({ namedEvent, listenerCallback }: UnsubscribeParams) {
     return async (): Promise<void> => {
       this.subscribeConnection?.removeEventListener(namedEvent, listenerCallback);
-      console.log(`removed eventListener for ${namedEvent}`);
+      console.debug(`removed eventListener for ${namedEvent}`);
       this.eventMap.delete(namedEvent);
       if (this.eventMap.size === 0) {
         this.subscriptionId = '';
@@ -152,28 +157,49 @@ export default class ServerSentEvents {
     };
   }
 
+  private async authorizeConnection(): Promise<ConnectionToken | AuthorizationError> {
+    const headers = this.getAuthHeaders();
+    const authUrl = `${this.baseUrl}/bitloops/events/authorize`;
+    const response = await this.http.handler({
+      url: authUrl,
+      method: 'POST',
+      headers,
+      data: {},
+    });
+    const { data, error } = response;
+    if (error || !data) {
+      if (error instanceof AuthorizationError) {
+        return error;
+      }
+      throw new Error('Unexpected error' + error);
+    }
+
+    const connectionToken = data.data as ConnectionToken;
+    return connectionToken;
+  }
+
   /**
    * Ask for new connection
    */
   private sseReconnect() {
     setTimeout(async () => {
-      console.log('Trying to reconnect sse with', this.reconnectFreqSecs);
+      console.debug('Trying to reconnect sse with', this.reconnectFreqSecs);
       this.reconnectFreqSecs = this.reconnectFreqSecs >= 60 ? 60 : this.reconnectFreqSecs * 2;
       return this.tryToResubscribe();
     }, this.reconnectFreqSecs * 1000);
   }
 
   private async tryToResubscribe() {
-    console.log('Attempting to resubscribe');
-    // console.log(' this.eventMap.length', this.eventMap.size);
+    console.debug('Attempting to resubscribe');
+    // console.debug(' this.eventMap.length', this.eventMap.size);
     try {
-      console.log('Setting again eventsource');
+      console.debug('Setting again eventsource');
       await this.setupEventSource();
       const subscribePromises = Array.from(this.eventMap.entries()).map(([namedEvent, callback]) =>
         this.subscribe(namedEvent, callback),
       );
       await Promise.all(subscribePromises);
-      console.log('Resubscribed all topics successfully!');
+      console.debug('Resubscribed all topics successfully!');
     } catch (err) {
       return;
     }
@@ -189,7 +215,7 @@ export default class ServerSentEvents {
 
       this.subscribeConnection = new EventSource(url, eventSourceInitDict);
       this.subscribeConnection.onopen = () => {
-        console.log('The connection has been established.');
+        console.debug('The connection has been established.');
         this.reconnectFreqSecs = 1;
         return resolve();
       };
@@ -197,7 +223,7 @@ export default class ServerSentEvents {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       this.subscribeConnection.onerror = (error: any) => {
         // on error, ermis will clear our connectionId so we need to create a new one
-        console.log('subscribeConnection.onerror, closing and re-trying', error);
+        console.debug('subscribeConnection.onerror, closing and re-trying', error);
         this.subscribeConnection?.close();
         this.sseReconnect();
         return reject(error);

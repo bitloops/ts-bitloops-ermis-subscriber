@@ -1,16 +1,9 @@
+import { AuthorizationError } from './errors/AuthorizationError';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { AxiosHandlerOutcome } from './definitions';
 import CanceledRequestError from './errors/CanceledRequestError';
 import { CANCEL_REQUEST_MSG } from './errors/definitions';
 import NetworkRestError from './errors/NetworkRestError';
-
-type InterceptRequest = (config: AxiosRequestConfig<any>) => Promise<any>;
-/*
- * If business login interceptor returns true,
- * we retry the request, if it returns false,
- * we rejectPromise the initial error
- */
-type InterceptResponseError = (error: any) => Promise<boolean>;
 
 /** Plain http post and get requests
  * They can be either intercepted or not
@@ -38,6 +31,9 @@ export default class HTTP {
     }
     // http status code
     const code = error.response.status;
+    if (code === 401) {
+      return new AuthorizationError(error.message);
+    }
     // response data
     const response = error.response.data;
     return error.response;
