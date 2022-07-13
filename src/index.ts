@@ -105,7 +105,7 @@ export default class ErmisClient {
     namedEvent: string,
   ): Promise<Result<void>> {
     const { gwBaseUrl, subscribePath } = this.config;
-    const subscribeUrl = `${gwBaseUrl}${subscribePath}${subscriptionId}`;
+    const subscribeUrl = `${gwBaseUrl}${subscribePath}/${subscriptionId}`;
 
     const headers = this.getAuthHeaders();
     // console.debug('Sending headers', headers);
@@ -144,7 +144,7 @@ export default class ErmisClient {
       }
 
       const { gwBaseUrl, unsubscribePath } = this.config;
-      const unsubscribeUrl = `${gwBaseUrl}${unsubscribePath}${this.subscriptionId}`;
+      const unsubscribeUrl = `${gwBaseUrl}${unsubscribePath}/${this.subscriptionId}`;
 
       const headers = this.getAuthHeaders();
 

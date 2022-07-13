@@ -24,10 +24,10 @@ export class Config {
     this._host = options.host ?? 'api.ermis.io';
     this._gwHost = options.gwHost ?? 'gw.ermis.io';
     this._ssl = options.ssl || false;
-    this._subscribePath = '/bitloops/events/subscribe/';
-    this._unsubscribePath = '/bitloops/events/unsubscribe/';
-    this._connectionPath = '/bitloops/events/';
-    this._authorizePath = '/bitloops/events/authorize/';
+    this._subscribePath = '/bitloops/events/subscribe';
+    this._unsubscribePath = '/bitloops/events/unsubscribe';
+    this._connectionPath = '/bitloops/events';
+    this._authorizePath = '/bitloops/events/authorize';
   }
 
   getConfig(): ErmisOptions {
