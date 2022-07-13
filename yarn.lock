@@ -1341,10 +1341,10 @@ esutils@^2.0.2:
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-eventsource@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/eventsource/-/eventsource-2.0.2.tgz#76dfcc02930fb2ff339520b6d290da573a9e8508"
-  integrity sha512-IzUmBGPR3+oUG9dUeXynyNmf91/3zUSJg1lCktzKw47OXuhco54U3r9B7O4XX+Rb1Itm9OZ2b0RkTs10bICOxA==
+eventsource@2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/eventsource/-/eventsource-2.0.0.tgz#c2255b7ff8ed237ca5e08f8b48fc6abff83daed9"
+  integrity sha512-U9TI2qLWwedwiDLCbSUoSAPHGK2P7nT6/f25wBzMy9tWOKgFoNY4n+GYCPCYg3sGKrIoCmpChJoO3KKymcLo8A==
 
 execa@^5.0.0:
   version "5.1.1"

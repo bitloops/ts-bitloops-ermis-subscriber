@@ -23,7 +23,7 @@
   "author": "Bitloops",
   "license": "MIT",
   "devDependencies": {
-    "@types/eventsource": "^1.1.9",
+    "@types/eventsource": "^1.1.8",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
@@ -37,7 +37,7 @@
     "@types/jest": "^28.1.4",
     "async-mutex": "^0.3.2",
     "axios": "^0.27.2",
-    "eventsource": "^2.0.2",
+    "eventsource": "2.0.0",
     "jest": "^28.1.2",
     "ts-jest": "^28.0.5",
     "uuid": "^8.3.2"

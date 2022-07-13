@@ -217,11 +217,13 @@ export default class ErmisClient {
 
     return new Promise<void>((resolve, reject) => {
       const { baseUrl, connectionPath } = this.config;
-      const url = `${baseUrl}${connectionPath}${this.subscriptionId}`;
+      const url = `${baseUrl}${connectionPath}`;
 
-      const headers: Record<string, string> = this.getAuthHeaders();
-      headers.token = authResult.getValue();
+      // pass token from authResult.getValue();
+      const connectionToken = authResult.getValue();
+      const headers: Record<string, string> = this.getAuthHeaders(connectionToken);
       const eventSourceInitDict = { headers };
+      console.log('headers', headers);
 
       this.subscribeConnection = new EventSource(url, eventSourceInitDict);
       this.subscribeConnection.onopen = () => {
@@ -240,9 +242,13 @@ export default class ErmisClient {
     });
   }
 
-  private getAuthHeaders() {
-    const headers = { 'Content-Type': 'application/json', Authorization: 'Unauthorized ' };
-    headers.Authorization = this.config.publicKey;
+  private getAuthHeaders(token?: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: 'Unauthorized ',
+    };
+    if (token) headers.Authorization = `User ${token}`;
+    headers['public-key'] = this.config.publicKey;
     return headers;
   }
 }
