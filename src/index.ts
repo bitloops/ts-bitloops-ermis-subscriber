@@ -3,18 +3,18 @@ import { v4 as uuid } from 'uuid';
 import { Mutex } from 'async-mutex';
 import { Unsubscribe, UnsubscribeParams, ListenerCallback } from './types';
 import HTTP from './HTTP/http';
-import { ConnectionToken, SubscribeConfig } from './types';
-import { SERVICE_BASE_URL } from './constants';
+import { ConnectionToken } from './types';
 import { AuthorizationError } from './HTTP/errors/AuthorizationError';
 import { Result } from './shared/Result';
 import { http } from './HTTP';
+import { Config, ErmisOptions } from './config';
 
 export default class ErmisClient {
   public static instance: ErmisClient;
 
   private http: HTTP;
 
-  private config: SubscribeConfig;
+  private config: Config;
 
   private subscribeConnection?: EventSource;
 
@@ -26,18 +26,15 @@ export default class ErmisClient {
 
   private mutex: Mutex;
 
-  private baseUrl: string;
-
-  private constructor(config: SubscribeConfig) {
-    this.config = config;
+  private constructor(options: ErmisOptions) {
+    this.config = new Config(options);
     this.http = http;
     this.mutex = new Mutex();
-    this.baseUrl = config.server ?? SERVICE_BASE_URL;
   }
 
-  public static getInstance(config: SubscribeConfig) {
+  public static getInstance(options: ErmisOptions) {
     if (!ErmisClient.instance) {
-      ErmisClient.instance = new ErmisClient(config);
+      ErmisClient.instance = new ErmisClient(options);
     }
     return ErmisClient.instance;
   }
@@ -107,7 +104,8 @@ export default class ErmisClient {
     subscriptionId: string,
     namedEvent: string,
   ): Promise<Result<void>> {
-    const subscribeUrl = `${this.baseUrl}/bitloops/events/subscribe/${subscriptionId}`;
+    const { gwBaseUrl, subscribePath } = this.config;
+    const subscribeUrl = `${gwBaseUrl}${subscribePath}${subscriptionId}`;
 
     const headers = this.getAuthHeaders();
     // console.debug('Sending headers', headers);
@@ -145,7 +143,8 @@ export default class ErmisClient {
         this.subscribeConnection?.close();
       }
 
-      const unsubscribeUrl = `${this.baseUrl}/bitloops/events/unsubscribe/${this.subscriptionId}`;
+      const { gwBaseUrl, unsubscribePath } = this.config;
+      const unsubscribeUrl = `${gwBaseUrl}${unsubscribePath}${this.subscriptionId}`;
 
       const headers = this.getAuthHeaders();
 
@@ -160,7 +159,9 @@ export default class ErmisClient {
 
   private async authorizeConnection(): Promise<Result<ConnectionToken>> {
     const headers = this.getAuthHeaders();
-    const authUrl = `${this.baseUrl}/bitloops/events/authorize`;
+
+    const { gwBaseUrl, authorizePath } = this.config;
+    const authUrl = `${gwBaseUrl}${authorizePath}`;
     const response = await this.http.handler({
       url: authUrl,
       method: 'POST',
@@ -215,7 +216,8 @@ export default class ErmisClient {
     }
 
     return new Promise<void>((resolve, reject) => {
-      const url = `${this.baseUrl}/bitloops/events/${this.subscriptionId}`;
+      const { baseUrl, connectionPath } = this.config;
+      const url = `${baseUrl}${connectionPath}${this.subscriptionId}`;
 
       const headers: Record<string, string> = this.getAuthHeaders();
       headers.token = authResult.getValue();
