@@ -1,7 +1,6 @@
 export type ErmisOptions = {
   applicationId: string;
   publicKey: string;
-  secret: string;
   host?: string;
   gwHost?: string;
   ssl?: boolean;
@@ -11,7 +10,6 @@ export class Config {
   private _applicationId: string;
   // add remaining private members from constructor body
   private _publicKey: string;
-  private _secret: string;
   private _host: string;
   private _gwHost: string;
   private _ssl: boolean;
@@ -23,7 +21,6 @@ export class Config {
   constructor(options: ErmisOptions) {
     this._applicationId = options.applicationId;
     this._publicKey = options.publicKey;
-    this._secret = options.secret;
     this._host = options.host ?? 'api.ermis.io';
     this._gwHost = options.gwHost ?? 'gw.ermis.io';
     this._ssl = options.ssl || false;
@@ -37,7 +34,6 @@ export class Config {
     return {
       applicationId: this._applicationId,
       publicKey: this._publicKey,
-      secret: this._secret,
       host: this._host,
       ssl: this._ssl,
     };
@@ -49,10 +45,6 @@ export class Config {
 
   get publicKey(): string {
     return this._publicKey;
-  }
-
-  get secret(): string {
-    return this._secret;
   }
 
   get host(): string {
