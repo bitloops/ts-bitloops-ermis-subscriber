@@ -1,6 +1,6 @@
 {
   "name": "bitloops-ermis-subscriber",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Bitloops Ermis subscriber library for the browser and node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
