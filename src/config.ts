@@ -4,6 +4,7 @@ export type ErmisOptions = {
   host?: string;
   gwHost?: string;
   ssl?: boolean;
+  debug?: boolean;
 };
 
 export class Config {
